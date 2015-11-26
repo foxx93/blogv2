@@ -22,4 +22,5 @@ should you have any questions.</p>
 <?php
 
 		echo CPasswordHelper::hashPassword('foxx');
+
 ?>

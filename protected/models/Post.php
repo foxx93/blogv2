@@ -19,10 +19,26 @@
  */
 class Post extends CActiveRecord
 {
-	/**
+
+    const STATUS_DRAFT=1;
+    const STATUS_PUBLISHED=2;
+    const STATUS_ARCHIVED=3;
+
+    /**
 	 * @return string the associated database table name
 	 */
-	public function tableName()
+
+
+    public function getUrl()
+    {
+        return Yii::app()->createUrl('post/view', array(
+            'id'=>$this->id,
+            'title'=>$this->title,
+        ));
+    }
+
+
+    public function tableName()
 	{
 		return 'tbl_post';
 	}
@@ -30,6 +46,8 @@ class Post extends CActiveRecord
 	/**
 	 * @return array validation rules for model attributes.
 	 */
+	/*
+	|||||||||||||||Eredeti Rules||||||||||||||
 	public function rules()
 	{
 		// NOTE: you should only define rules for those attributes that
@@ -44,10 +62,28 @@ class Post extends CActiveRecord
 			array('id, title, content, tags, status, create_time, update_time, author_id', 'safe', 'on'=>'search'),
 		);
 	}
+	|||||||||||||||Eredeti Rules||||||||||||||
+	*/
+    public function rules()
+    {
+        return array(
+            array('title, content, status, author_id', 'required'),
+            array('title', 'length', 'max'=>128),
+            array('status', 'in', 'range'=>array(1,2,3)),
+            array('tags', 'match', 'pattern'=>'/^[\w\s,]+$/',
+                'message'=>'Tags can only contain word characters.'),
+            array('tags', 'normalizeTags'),
+            array('title, status', 'safe', 'on'=>'search'),
+        );
+
+    }
 
 	/**
 	 * @return array relational rules.
 	 */
+    /*
+     /* Régi Relation
+
 	public function relations()
 	{
 		// NOTE: you may need to adjust the relation name and the related
@@ -57,6 +93,20 @@ class Post extends CActiveRecord
 			'author' => array(self::BELONGS_TO, 'User', 'author_id'),
 		);
 	}
+    */
+    public function relations()
+    {
+        return array(
+            'author' => array(self::BELONGS_TO, 'User', 'author_id'),
+            'comments' => array(self::HAS_MANY, 'Comment', 'post_id',
+                'condition'=>'comments.status='.Comment::STATUS_APPROVED,
+                'order'=>'comments.create_time DESC'),
+            'commentCount' => array(self::STAT, 'Comment', 'post_id',
+                'condition'=>'status='.Comment::STATUS_APPROVED),
+        );
+    }
+
+
 
 	/**
 	 * @return array customized attribute labels (name=>label)
@@ -117,4 +167,10 @@ class Post extends CActiveRecord
 	{
 		return parent::model($className);
 	}
+
+    public function normalizeTags($attribute,$params)
+    {
+        $this->tags = Tag::array2string(array_unique(Tag::string2array($this->tags)));
+
+    }
 }
