@@ -129,5 +129,4 @@ class lookup extends CActiveRecord
 		foreach($models as $model)
 			self::$_items[$type][$model->code]=$model->name;
 	}
-
 }
