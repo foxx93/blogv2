@@ -44,11 +44,33 @@ class PostController extends Controller
 	 * Displays a particular model.
 	 * @param integer $id the ID of the model to be displayed
 	 */
-	public function actionView($id)
+	public function actionView()
 	{
+		$post=$this->loadModel();
 		$this->render('view',array(
-			'model'=>$this->loadModel($id),
+				'model'=>$post,
 		));
+	}
+
+	private $_model;
+
+	public function loadModel()
+	{
+		if($this->_model===null)
+		{
+			if(isset($_GET['id']))
+			{
+				if(Yii::app()->user->isGuest)
+					$condition='status='.Post::STATUS_PUBLISHED
+							.' OR status='.Post::STATUS_ARCHIVED;
+				else
+					$condition='';
+				$this->_model=Post::model()->findByPk($_GET['id'], $condition);
+			}
+			if($this->_model===null)
+				throw new CHttpException(404,'The requested page does not exist.');
+		}
+		return $this->_model;
 	}
 
 	/**
@@ -103,13 +125,18 @@ class PostController extends Controller
 	 * If deletion is successful, the browser will be redirected to the 'admin' page.
 	 * @param integer $id the ID of the model to be deleted
 	 */
-	public function actionDelete($id)
+	public function actionDelete()
 	{
-		$this->loadModel($id)->delete();
+		if(Yii::app()->request->isPostRequest)
+		{
+			// we only allow deletion via POST request
+			$this->loadModel()->delete();
 
-		// if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
-		if(!isset($_GET['ajax']))
-			$this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('admin'));
+			if(!isset($_GET['ajax']))
+				$this->redirect(array('index'));
+		}
+		else
+			throw new CHttpException(400,'Invalid request. Please do not repeat this request again.');
 	}
 
 	/**
@@ -117,26 +144,38 @@ class PostController extends Controller
 	 */
 	public function actionIndex()
 	{
-		$dataProvider=new CActiveDataProvider('Post');
+		$criteria=new CDbCriteria(array(
+				'condition'=>'status='.Post::STATUS_PUBLISHED,
+				'order'=>'update_time DESC',
+				'with'=>'commentCount',
+		));
+		if(isset($_GET['tag']))
+			$criteria->addSearchCondition('tags',$_GET['tag']);
+
+		$dataProvider=new CActiveDataProvider('Post', array(
+				'pagination'=>array(
+						'pageSize'=>5,
+				),
+				'criteria'=>$criteria,
+		));
+
 		$this->render('index',array(
-			'dataProvider'=>$dataProvider,
+				'dataProvider'=>$dataProvider,
 		));
 	}
 
 	/**
 	 * Manages all models.
 	 */
-	public function actionAdmin()
-	{
-		$model=new Post('search');
-		$model->unsetAttributes();  // clear any default values
-		if(isset($_GET['Post']))
-			$model->attributes=$_GET['Post'];
-
-		$this->render('admin',array(
+public function actionAdmin()
+{
+	$model=new Post('search');
+	if(isset($_GET['Post']))
+		$model->attributes=$_GET['Post'];
+	$this->render('admin',array(
 			'model'=>$model,
-		));
-	}
+	));
+}
 
 	/**
 	 * Returns the data model based on the primary key given in the GET variable.
@@ -145,13 +184,6 @@ class PostController extends Controller
 	 * @return Post the loaded model
 	 * @throws CHttpException
 	 */
-	public function loadModel($id)
-	{
-		$model=Post::model()->findByPk($id);
-		if($model===null)
-			throw new CHttpException(404,'The requested page does not exist.');
-		return $model;
-	}
 
 	/**
 	 * Performs the AJAX validation.

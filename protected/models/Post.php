@@ -190,12 +190,7 @@ class Post extends CActiveRecord
 		else
 			return false;
 	}
-	protected function afterDelete()
-	{
-		parent::afterDelete();
-		Comment::model()->deleteAll('post_id='.$this->id);
-		Tag::model()->updateFrequency($this->tags, '');
-	}
+
 	protected function afterSave()
 	{
 		parent::afterSave();
@@ -210,4 +205,10 @@ class Post extends CActiveRecord
 		$this->_oldTags=$this->tags;
 	}
 
+	protected function afterDelete()
+	{
+		parent::afterDelete();
+		Comment::model()->deleteAll('post_id='.$this->id);
+		Tag::model()->updateFrequency($this->tags, '');
+	}
 }
