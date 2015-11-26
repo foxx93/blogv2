@@ -1,6 +1,5 @@
 <?php
 /* @var $this SiteController */
-
 $this->pageTitle=Yii::app()->name;
 ?>
 
@@ -19,8 +18,8 @@ the <a href="http://www.yiiframework.com/doc/">documentation</a>.
 Feel free to ask in the <a href="http://www.yiiframework.com/forum/">forum</a>,
 should you have any questions.</p>
 
+
 <?php
-
-		echo CPasswordHelper::hashPassword('foxx');
-
+/*echo CPasswordHelper::hashPassword('foxx');*/
 ?>
+
